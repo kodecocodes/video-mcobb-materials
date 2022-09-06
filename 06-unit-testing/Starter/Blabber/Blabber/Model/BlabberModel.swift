@@ -52,54 +52,27 @@ class BlabberModel: ObservableObject {
   func shareLocation() async throws {
   }
 
-  /// Uses push-based AsyncStream to countdown and send the message.
+  /// Uses pull-based AsyncStream to countdown and send the message.
   func countdown(to message: String) async throws {
     guard !message.isEmpty else { return }
-    let counter = AsyncStream<String> { continuation in
-      var countdown = 3
-      Timer.scheduledTimer(
-        withTimeInterval: 1.0,
-        repeats: true
-      ) { timer in
-        // DONE: Challenge code
-        guard countdown > 0 else {
-          timer.invalidate()
-          continuation.yield(with: .success("🎉 " + message))
-//          continuation.finish()
-          return
+    var countdown = 3
+    let counter = AsyncStream<String> {
+      do {
+        try await Task.sleep(nanoseconds: 1_000_000_000)
+        defer { countdown -= 1 }
+        switch countdown {
+        case (1...): return "\(countdown)..."
+        case 0: return "🎉 " + message
+        default: return nil
         }
-
-        continuation.yield("\(countdown) ...")
-        countdown -= 1
+      } catch {
+        return nil
       }
     }
-
     for await countdownMessage in counter {
       try await say(countdownMessage)
     }
   }
-
-  /// Uses pull-based AsyncStream to countdown and send the message.
-//  func countdown(to message: String) async throws {
-//    guard !message.isEmpty else { return }
-//    var countdown = 3
-//    let counter = AsyncStream<String> {
-//      do {
-//        try await Task.sleep(nanoseconds: 1_000_000_000)
-//        defer { countdown -= 1 }
-//        switch countdown {
-//        case (1...): return "\(countdown)..."
-//        case 0: return "🎉 " + message
-//        default: return nil
-//        }
-//      } catch {
-//        return nil
-//      }
-//    }
-//    for await countdownMessage in counter {
-//      try await say(countdownMessage)
-//    }
-//  }
 
   /// Start live chat updates
   @MainActor
